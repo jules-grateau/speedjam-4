@@ -35,17 +35,26 @@ public class PlayerController : MonoBehaviour
     private WallBehindCheck _wallBehindCheck;
     private Animator _animator;
 
+    [SerializeField]
+    private AudioClip _jumpClip;
+    [SerializeField]
+    private AudioClip _crouchClip;
+
+    private AudioSource _audioSource;
+
     private void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
         _groundCheck = GetComponentInChildren<GroundCheck>();
         _wallBehindCheck = GetComponentInChildren<WallBehindCheck>();
         _animator = GetComponent<Animator>();
+        _audioSource = GetComponent<AudioSource>();
     }
 
     private void Update()
     {
         Jump();
+        _animator.SetBool("isJumping", _isJumping);
     }
 
     // Update is called once per frame
@@ -56,7 +65,7 @@ public class PlayerController : MonoBehaviour
         var horizontalInput = Input.GetAxisRaw("Horizontal");
         var isGoingStraight = horizontalInput == transform.localScale.x;
 
-        if (_rb.velocity.y <= 0.0f) _isJumping = false;
+        if (_rb.velocity.y == 0.0f) _isJumping = false;
 
         if (_groundCheck.IsGrounded && !_isJumping)
         {
@@ -77,9 +86,10 @@ public class PlayerController : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log(currVelocityBiggerThanSpeed);
                     if(!currVelocityBiggerThanSpeed) _rb.velocity = new Vector2(newVelocity, 0.0f);
                 }
+
+                _animator.SetBool("isWalking", _rb.velocity.x != 0.0f);
             }
         } else
         {
@@ -95,14 +105,20 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        if(Input.GetKey(KeyCode.C))
+        if(Input.GetKey(KeyCode.S))
         {
-            //_animator.SetBool("isCrouching", true);
-            transform.localScale = new Vector3(transform.localScale.x, 0.5f, transform.localScale.z);
+            if(!_isCrouching)
+            {
+                _audioSource.clip = _crouchClip;
+                _audioSource.Play();
+            }
+            _animator.SetBool("isCrouching", true);
+            _animator.SetBool("isWalking", true);
+            transform.localScale = new Vector3(transform.localScale.x, 0.8f, transform.localScale.z);
             _isCrouching = true;
         } else
         {
-            //_animator.SetBool("isCrouching", false);
+            _animator.SetBool("isCrouching", false);
             transform.localScale = new Vector3(transform.localScale.x, 1f, transform.localScale.z);
             _isCrouching = false;
         }
@@ -115,10 +131,13 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && _groundCheck.IsGrounded)
+        if ((Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W)) && _groundCheck.IsGrounded)
         {
+            _animator.SetBool("isWalking", false);
             _rb.AddForce(Vector2.up * _jumpForce, ForceMode2D.Impulse);
             _isJumping = true;
+            _audioSource.clip = _jumpClip;
+            _audioSource.Play();
         }
     }
 

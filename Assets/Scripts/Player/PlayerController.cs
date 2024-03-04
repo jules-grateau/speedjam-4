@@ -42,6 +42,14 @@ public class PlayerController : MonoBehaviour
 
     private AudioSource _audioSource;
 
+    private float _lastJumpTry;
+    [SerializeField]
+    private float _jumpTimeForgiveness = 0.2f;
+
+    private float _lastJumpTime;
+    [SerializeField]
+    private float _jumpDelay = 0.1f;
+
     private void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
@@ -131,13 +139,29 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        if ((Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W)) && _groundCheck.IsGrounded)
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W) || Time.time - _lastJumpTry <= _jumpTimeForgiveness)
         {
-            _animator.SetBool("isWalking", false);
-            _rb.AddForce(Vector2.up * _jumpForce, ForceMode2D.Impulse);
-            _isJumping = true;
-            _audioSource.clip = _jumpClip;
-            _audioSource.Play();
+            if((Time.time - _lastJumpTime >= _jumpDelay) && _groundCheck.IsGrounded)
+            {
+                Debug.Log($"Time : {Time.time}");
+                Debug.Log($"LastJump : {_lastJumpTry}");
+
+                _animator.SetBool("isWalking", false);
+                
+                if (_rb.velocity.y < 0.0f) _rb.velocity = new Vector2(_rb.velocity.x, 0.0f);
+                _rb.AddForce(Vector2.up * _jumpForce, ForceMode2D.Impulse);
+
+                _isJumping = true;
+                _lastJumpTime = Time.time;
+                _audioSource.clip = _jumpClip;
+                _audioSource.Play();
+
+                _lastJumpTry = 0.0f;
+            } else
+            {
+                _lastJumpTry = Time.time;
+            }
+
         }
     }
 
